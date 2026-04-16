@@ -75,12 +75,14 @@ try {
         exit
     }
 
+    $version      = (& $rustdeskExe --version | Out-String).Trim()
     $clientId     = (& $rustdeskExe --get-id | Out-String).Trim()
     $idServer     = Get-RustDeskOption -ExePath $rustdeskExe -Key 'custom-rendezvous-server'
     $relayServer  = Get-RustDeskOption -ExePath $rustdeskExe -Key 'relay-server'
     $apiServer    = Get-RustDeskOption -ExePath $rustdeskExe -Key 'api-server'
     $publicKey    = Get-RustDeskOption -ExePath $rustdeskExe -Key 'key'
 
+    Write-Host ("Version: {0}" -f $(if ([string]::IsNullOrEmpty($version)) { '(unknown)' } else { $version }))
     Write-Host ("ID: {0}" -f $(if ([string]::IsNullOrEmpty($clientId)) { '(not set)' } else { $clientId }))
     Write-Host ("ID Server: {0}" -f $idServer)
     Write-Host ("Relay Server: {0}" -f $relayServer)
