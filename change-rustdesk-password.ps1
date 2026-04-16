@@ -22,6 +22,27 @@ function Test-IsAdmin {
     $principal = New-Object System.Security.Principal.WindowsPrincipal([System.Security.Principal.WindowsIdentity]::GetCurrent())
     return $principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
 }
+
+function Wait-RustDeskServiceRunning {
+    param(
+        [string]$ServiceName = 'Rustdesk',
+        [int]$MaxAttempts = 12,
+        [int]$DelaySeconds = 5
+    )
+    $service = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+    if ($null -eq $service) {
+        Write-Error "RustDesk service not registered. Is RustDesk installed?"
+        return $false
+    }
+    for ($i = 0; $i -lt $MaxAttempts; $i++) {
+        $service.Refresh()
+        if ($service.Status -eq 'Running') { return $true }
+        try { Start-Service -Name $ServiceName -ErrorAction Stop } catch { }
+        Start-Sleep -Seconds $DelaySeconds
+    }
+    Write-Error ("RustDesk service did not reach 'Running' state within {0} seconds." -f ($MaxAttempts * $DelaySeconds))
+    return $false
+}
 #endregion Helper Functions
 
 #region Main Script
@@ -46,6 +67,13 @@ try {
         exit
     }
 
+    # --password goes over IPC to the running service, so the service must be up.
+    # If it's stopped, the password silently lands in the wrong profile.
+    if (-not (Wait-RustDeskServiceRunning)) {
+        Write-Error "RustDesk service did not reach a running state. Aborting password change."
+        exit
+    }
+
     # Set the location to the installation directory
     Set-Location -Path $rustdeskInstallPath
 
@@ -53,7 +81,6 @@ try {
     & ".\rustdesk.exe" --password $rustdeskPermanentPassword
 
     Write-Host "Permanent password set successfully."
-    Write-Host "You may need to restart the RustDesk service or client for changes to take effect."
 }
 catch {
     Write-Error "Failed to update RustDesk password."
