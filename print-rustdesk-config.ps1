@@ -22,7 +22,7 @@ function Wait-RustDeskServiceRunning {
     )
     $service = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
     if ($null -eq $service) {
-        Write-Error "RustDesk service not registered. Is RustDesk installed?"
+        Write-Host "RustDesk service is not registered."
         return $false
     }
     for ($i = 0; $i -lt $MaxAttempts; $i++) {
@@ -31,7 +31,7 @@ function Wait-RustDeskServiceRunning {
         try { Start-Service -Name $ServiceName -ErrorAction Stop } catch { }
         Start-Sleep -Seconds $DelaySeconds
     }
-    Write-Error ("RustDesk service did not reach 'Running' state within {0} seconds." -f ($MaxAttempts * $DelaySeconds))
+    Write-Host ("RustDesk service did not start within {0} seconds." -f ($MaxAttempts * $DelaySeconds))
     return $false
 }
 
@@ -54,25 +54,23 @@ function Get-RustDeskOption {
 # ==============================================================================
 
 if (-not (Test-IsAdmin)) {
-    Write-Error "This script must be run with Administrator privileges. Please right-click and 'Run as Administrator'."
-    exit
+    Write-Host "ERROR: Administrator privileges required."
+    exit 1
+}
+
+$rustdeskInstallPath = "$env:ProgramFiles\RustDesk"
+$rustdeskExe = Join-Path $rustdeskInstallPath 'rustdesk.exe'
+if (-not (Test-Path $rustdeskExe)) {
+    Write-Host "RustDesk is not installed."
+    exit 1
 }
 
 try {
-    # rustdesk.exe must be invoked from its installation directory so that
-    # is_installed() passes inside the binary.
-    $rustdeskInstallPath = "$env:ProgramFiles\RustDesk"
-    $rustdeskExe = Join-Path $rustdeskInstallPath 'rustdesk.exe'
-    if (-not (Test-Path $rustdeskExe)) {
-        Write-Error "RustDesk not found at '$rustdeskInstallPath'. Please ensure RustDesk is installed."
-        exit
-    }
     Set-Location -Path $rustdeskInstallPath
 
     # --get-id and --option both go over IPC, so the service must be running.
     if (-not (Wait-RustDeskServiceRunning)) {
-        Write-Error "RustDesk service did not reach a running state. Aborting."
-        exit
+        exit 1
     }
 
     $version      = (& $rustdeskExe --version | Out-String).Trim()
@@ -90,9 +88,8 @@ try {
     Write-Host ("Key: {0}" -f $publicKey)
 }
 catch {
-    Write-Error "Failed to read RustDesk configuration."
-    Write-Error $_.Exception.Message
-    exit
+    Write-Host "ERROR: $($_.Exception.Message)"
+    exit 1
 }
 
 #endregion Main Script
