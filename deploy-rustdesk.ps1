@@ -55,18 +55,18 @@ function Wait-RustDeskServiceRunning {
             Write-Host "RustDesk service not registered. Installing service..."
             $exe = Join-Path $InstallPath 'rustdesk.exe'
             if (-not (Test-Path $exe)) {
-                Write-Error "rustdesk.exe not found at '$exe'."
+                Write-Host "ERROR: rustdesk.exe not found at '$exe'."
                 return $false
             }
             Start-Process -FilePath $exe -ArgumentList '--install-service' -Wait -NoNewWindow
             Start-Sleep -Seconds 5
             $service = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
             if ($null -eq $service) {
-                Write-Error "Failed to register RustDesk service."
+                Write-Host "ERROR: Failed to register RustDesk service."
                 return $false
             }
         } else {
-            Write-Error "RustDesk service not registered. Is RustDesk installed?"
+            Write-Host "RustDesk service is not registered."
             return $false
         }
     }
@@ -76,7 +76,7 @@ function Wait-RustDeskServiceRunning {
         try { Start-Service -Name $ServiceName -ErrorAction Stop } catch { }
         Start-Sleep -Seconds $DelaySeconds
     }
-    Write-Error ("RustDesk service did not reach 'Running' state within {0} seconds." -f ($MaxAttempts * $DelaySeconds))
+    Write-Host ("RustDesk service did not start within {0} seconds." -f ($MaxAttempts * $DelaySeconds))
     return $false
 }
 
@@ -89,13 +89,13 @@ function Get-LatestRustDeskRelease {
     try {
         $response = Invoke-RestMethod -Uri 'https://api.github.com/repos/rustdesk/rustdesk/releases/latest' -TimeoutSec 30
     } catch {
-        Write-Error "Failed to fetch latest RustDesk release from GitHub: $_"
+        Write-Host "ERROR: Failed to fetch latest RustDesk release from GitHub: $($_.Exception.Message)"
         return $null
     }
     $version = ($response.tag_name -replace '^v', '').Trim()
     $asset = $response.assets | Where-Object { $_.name -like "*$suffix" } | Select-Object -First 1
     if (-not $asset) {
-        Write-Error "No $suffix asset found in release $version."
+        Write-Host "ERROR: No $suffix asset found in release $version."
         return $null
     }
     return @{
@@ -133,8 +133,8 @@ function Invoke-DownloadWithRetry {
 # ==============================================================================
 
 if (-not (Test-IsAdmin)) {
-    Write-Error "This script must be run with Administrator privileges. Please right-click and 'Run as Administrator'."
-    exit
+    Write-Host "ERROR: Administrator privileges required."
+    exit 1
 }
 
 $rustdeskInstallPath = "$env:ProgramFiles\RustDesk"
@@ -151,8 +151,8 @@ if ($rustdeskVersionOverride) {
     Write-Host "Fetching latest RustDesk release from GitHub..."
     $release = Get-LatestRustDeskRelease -InstallerType 'exe'
     if (-not $release) {
-        Write-Error "Could not determine latest version. Set `$rustdeskVersionOverride to pin a version."
-        exit
+        Write-Host "ERROR: Could not determine latest version. Set \$rustdeskVersionOverride to pin a version."
+        exit 1
     }
     $targetVersion = $release.Version
     $installerUrl = $release.DownloadUrl
@@ -191,8 +191,8 @@ if (-not $skipInstall) {
         Write-Host "Downloading RustDesk installer from $installerUrl..."
         Invoke-DownloadWithRetry -Uri $installerUrl -OutFile $installerPath
     } catch {
-        Write-Error "Failed to download the RustDesk installer after multiple attempts: $_"
-        exit
+        Write-Host "ERROR: Failed to download the RustDesk installer: $($_.Exception.Message)"
+        exit 1
     }
 
     try {
@@ -200,8 +200,8 @@ if (-not $skipInstall) {
         Start-Process -FilePath $installerPath -ArgumentList "--silent-install" -Wait -NoNewWindow
         Write-Host "Installation completed."
     } catch {
-        Write-Error "RustDesk installation failed: $_"
-        exit
+        Write-Host "ERROR: RustDesk installation failed: $($_.Exception.Message)"
+        exit 1
     }
 
     Remove-Item -Path $installerPath -Force -ErrorAction SilentlyContinue
@@ -214,8 +214,7 @@ try {
     Set-Location -Path $rustdeskInstallPath
 
     if (-not (Wait-RustDeskServiceRunning -InstallPath $rustdeskInstallPath -InstallIfMissing)) {
-        Write-Error "RustDesk service did not reach a running state. Aborting configuration."
-        exit
+        exit 1
     }
 
     Write-Host "Applying server options..."
@@ -227,21 +226,15 @@ try {
 
     & ".\rustdesk.exe" --password $rustdeskPermanentPassword
 
-    Write-Host ""
     $clientId = (& ".\rustdesk.exe" --get-id | Out-String).Trim()
     if ($clientId) {
         Write-Host "ID: $clientId"
     } else {
-        Write-Error "Failed to retrieve the RustDesk client ID."
+        Write-Host "WARNING: Failed to retrieve the RustDesk client ID."
     }
 } catch {
-    Write-Error "Failed to configure RustDesk: $_"
-    Write-Error $_.Exception.Message
-    Write-Host "StackTrace:" -ForegroundColor Yellow
-    Write-Host $_.ScriptStackTrace
-    exit
+    Write-Host "ERROR: $($_.Exception.Message)"
+    exit 1
 }
-
-Write-Host "Script finished."
 
 #endregion Main Script
