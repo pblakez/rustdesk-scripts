@@ -106,6 +106,111 @@ To use these scripts outside of Action1:
    ```
 3. Run the script with Administrator privileges
 
+## Linux (Ubuntu/Debian) Equivalents
+
+RustDesk's `--option` and `--password` CLI flags behave the same on Linux as on Windows, so the logic of `update-rustdesk-config.ps1` and `change-rustdesk-password.ps1` maps directly.
+
+### debian-install-rustdesk.sh
+
+Debian/Ubuntu equivalent of `deploy-rustdesk-msi.ps1`. Takes its parameters from the CLI instead of Action1 placeholders.
+
+```bash
+sudo ./debian-install-rustdesk.sh \
+  --id-server    id.example.com \
+  --key          "<public-key>" \
+  --password     'YourS3cureP@ssw0rd!' \
+  --relay-server relay.example.com \
+  --api-server   "" \
+  --version      1.4.1        # optional; omit for latest from GitHub
+```
+
+What it does (same flow as the MSI script):
+
+1. Resolves the target version (GitHub `releases/latest`, or `--version`).
+2. Skips download/install if the installed `rustdesk` package is already at or above the target (uses `dpkg --compare-versions`).
+3. Downloads `rustdesk-<version>-<arch>.deb` from GitHub (x86_64 / aarch64 / armv7).
+4. Installs with `dpkg -i`, falling back to `apt-get install -f` to resolve deps.
+5. Enables and starts `rustdesk.service`, waits for it to become active.
+6. Pushes `custom-rendezvous-server`, `relay-server`, `api-server`, `key` via `rustdesk --option`.
+7. Sets the permanent password via `rustdesk --password`.
+8. Prints the client ID.
+
+Always re-applies the config even when the install is skipped, so the same script handles first-install *and* server-detail updates on already-provisioned boxes.
+
+### Install locations
+
+- **Binary**: `/usr/bin/rustdesk` (symlink to `/usr/share/rustdesk/rustdesk`)
+- **Systemd unit**: `rustdesk.service` at `/lib/systemd/system/rustdesk.service`
+  - `ExecStart=/usr/bin/rustdesk --service`, runs as `root`
+- **Service config dir** (the one the service reads, since it runs as root): `/root/.config/rustdesk/`
+  - Contains `RustDesk.toml`, `RustDesk2.toml`, `RustDesk_local.toml`, etc.
+- **User config dir** (per-user GUI session): `~/.config/rustdesk/`
+- **Logs**: `~/.local/share/logs/RustDesk/`
+
+### Equivalent of `update-rustdesk-config.ps1`
+
+`--option` goes over IPC to the running service, so the service must be up and the commands must run as root (same caveat as Windows).
+
+```bash
+sudo systemctl start rustdesk
+sudo rustdesk --option custom-rendezvous-server <id-server>
+sudo rustdesk --option relay-server        <relay-server>   # "" to clear
+sudo rustdesk --option api-server          <api-server>     # "" to clear
+sudo rustdesk --option key                 <public-key>
+```
+
+Read a value back with `sudo rustdesk --option <key>` (no value argument).
+
+Alternative bulk import (useful for first-run provisioning):
+
+```bash
+sudo rustdesk --import-config /path/to/RustDesk2.toml
+```
+
+### Equivalent of `print-rustdesk-config.ps1`
+
+Read-only version of the same IPC calls — useful to confirm what the running service currently has applied.
+
+```bash
+sudo systemctl start rustdesk
+rustdesk --version
+rustdesk --get-id
+sudo rustdesk --option custom-rendezvous-server
+sudo rustdesk --option relay-server
+sudo rustdesk --option api-server
+sudo rustdesk --option key
+```
+
+Each `--option <key>` with no value prints the current setting (empty line = not set). One-liner:
+
+```bash
+for k in custom-rendezvous-server relay-server api-server key; do
+  printf '%-26s %s\n' "$k:" "$(sudo rustdesk --option "$k")"
+done
+```
+
+### Equivalent of `change-rustdesk-password.ps1`
+
+```bash
+sudo systemctl start rustdesk
+sudo rustdesk --password '<NewPermanentPassword>'
+```
+
+### Other useful commands
+
+```bash
+rustdesk --get-id                       # print this machine's RustDesk ID
+sudo systemctl status rustdesk          # service state
+sudo systemctl restart rustdesk         # apply changes that need a restart
+sudo systemctl enable --now rustdesk    # start now + enable at boot
+```
+
+### Notes / gotchas
+
+- The service runs as `root`, so its effective config lives under `/root/.config/rustdesk/`, **not** the logged-in user's `~/.config/rustdesk/`. Editing the user file will not affect the service.
+- `--option` and `--password` both require the service to be running; if it's stopped, writes can silently land in the wrong profile.
+- Install via the official `.deb` from [github.com/rustdesk/rustdesk/releases](https://github.com/rustdesk/rustdesk/releases): `sudo apt install ./rustdesk-<version>.deb`.
+
 ## Security Considerations
 
 - Scripts require Administrator privileges to modify system files
