@@ -31,7 +31,7 @@ function Wait-RustDeskServiceRunning {
     )
     $service = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
     if ($null -eq $service) {
-        Write-Error "RustDesk service not registered. Is RustDesk installed?"
+        Write-Host "RustDesk service is not registered."
         return $false
     }
     for ($i = 0; $i -lt $MaxAttempts; $i++) {
@@ -40,7 +40,7 @@ function Wait-RustDeskServiceRunning {
         try { Start-Service -Name $ServiceName -ErrorAction Stop } catch { }
         Start-Sleep -Seconds $DelaySeconds
     }
-    Write-Error ("RustDesk service did not reach 'Running' state within {0} seconds." -f ($MaxAttempts * $DelaySeconds))
+    Write-Host ("RustDesk service did not start within {0} seconds." -f ($MaxAttempts * $DelaySeconds))
     return $false
 }
 #endregion Helper Functions
@@ -51,43 +51,33 @@ function Wait-RustDeskServiceRunning {
 # ==============================================================================
 
 if (-not (Test-IsAdmin)) {
-    Write-Error "This script must be run with Administrator privileges. Please right-click and 'Run as Administrator'."
-    exit
+    Write-Host "ERROR: Administrator privileges required."
+    exit 1
+}
+
+$rustdeskInstallPath = "$env:ProgramFiles\RustDesk"
+if (-not (Test-Path (Join-Path $rustdeskInstallPath 'rustdesk.exe'))) {
+    Write-Host "RustDesk is not installed. Nothing to update."
+    exit 1
 }
 
 Write-Host "Updating RustDesk permanent password..."
 
 try {
-    # Define the installation path. This is the default path for a system-wide installation.
-    $rustdeskInstallPath = "$env:ProgramFiles\RustDesk"
-
-    # Check if the installation directory exists
-    if (-not (Test-Path $rustdeskInstallPath)) {
-        Write-Error "RustDesk installation not found at '$rustdeskInstallPath'. Please ensure RustDesk is installed."
-        exit
-    }
-
     # --password goes over IPC to the running service, so the service must be up.
     # If it's stopped, the password silently lands in the wrong profile.
     if (-not (Wait-RustDeskServiceRunning)) {
-        Write-Error "RustDesk service did not reach a running state. Aborting password change."
-        exit
+        exit 1
     }
 
-    # Set the location to the installation directory
     Set-Location -Path $rustdeskInstallPath
-
-    # Execute the RustDesk executable with the --password flag to set the new permanent password
     & ".\rustdesk.exe" --password $rustdeskPermanentPassword
 
     Write-Host "Permanent password set successfully."
 }
 catch {
-    Write-Error "Failed to update RustDesk password."
-    Write-Error $_.Exception.Message
-    exit
+    Write-Host "ERROR: $($_.Exception.Message)"
+    exit 1
 }
-
-Write-Host "Script finished."
 
 #endregion Main Script
