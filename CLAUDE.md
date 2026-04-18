@@ -20,10 +20,6 @@ Linux:
 
 - **debian-install-rustdesk.sh**: Debian/Ubuntu equivalent of `act1-deploy-rustdesk-msi.ps1`. Takes parameters from CLI flags (`--id-server`, `--key`, `--password`, etc.) instead of Action1 placeholders.
 
-Reference only (not maintained):
-
-- **example-pro-ps-deploy.psi**: Third-party RustDesk Pro deploy example kept for reference.
-
 ## Action1 Parameters
 
 Scripts substitute these `${name}` placeholders at execution time:
