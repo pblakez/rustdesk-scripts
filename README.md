@@ -110,7 +110,7 @@ To use these scripts outside of Action1:
 
 ## Linux (Ubuntu/Debian) Equivalents
 
-RustDesk's `--option` and `--password` CLI flags behave the same on Linux as on Windows, so the logic of `act1-update-rustdesk-config.ps1` and `act1-change-rustdesk-password.ps1` maps directly.
+RustDesk's `--option` and `--password` CLI flags behave the same on Linux as on Windows, so the logic of the Action1 PowerShell scripts maps directly. Two of them have packaged bash equivalents: `debian-install-rustdesk.sh` and `debian-update-rustdesk-config.sh`. The rest are short enough to run as ad-hoc commands.
 
 ### debian-install-rustdesk.sh
 
@@ -149,9 +149,21 @@ Always re-applies the config even when the install is skipped, so the same scrip
 - **User config dir** (per-user GUI session): `~/.config/rustdesk/`
 - **Logs**: `~/.local/share/logs/RustDesk/`
 
-### Equivalent of `act1-update-rustdesk-config.ps1`
+### debian-update-rustdesk-config.sh
 
-`--option` goes over IPC to the running service, so the service must be up and the commands must run as root (same caveat as Windows).
+Debian/Ubuntu equivalent of `act1-update-rustdesk-config.ps1`. Updates server/key on an existing install; does not install RustDesk and does not change the password.
+
+```bash
+sudo ./debian-update-rustdesk-config.sh \
+  --id-server    id.example.com \
+  --key          "<public-key>" \
+  --relay-server relay.example.com \
+  --api-server   ""
+```
+
+Errors out with "Nothing to update" if RustDesk isn't installed. Waits for the service to become active before writing, same IPC caveat as Windows.
+
+Raw-command equivalent (if you'd rather not run the script):
 
 ```bash
 sudo systemctl start rustdesk
