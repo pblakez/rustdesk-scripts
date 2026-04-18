@@ -121,6 +121,27 @@ function Get-LatestRustDeskRelease {
     }
 }
 
+# Waits for the RustDesk service's TOML config files to exist in the
+# LocalService profile. --option / --password persist to these files; on a
+# fresh install the service needs a beat to write them, and calls that
+# happen before can silently no-op (the service overwrites with defaults
+# when it does its first write).
+function Wait-RustDeskConfigReady {
+    param(
+        [string]$ConfigDir = "$env:WINDIR\ServiceProfiles\LocalService\AppData\Roaming\RustDesk\config",
+        [int]$MaxAttempts = 20,
+        [int]$DelaySeconds = 1
+    )
+    for ($i = 0; $i -lt $MaxAttempts; $i++) {
+        if (Get-ChildItem -Path $ConfigDir -Filter 'RustDesk*.toml' -ErrorAction SilentlyContinue) {
+            Start-Sleep -Seconds 2  # extra settle for the service's initial TOML write
+            return $true
+        }
+        Start-Sleep -Seconds $DelaySeconds
+    }
+    return $false
+}
+
 # Wraps Invoke-WebRequest with retry/backoff. Rethrows the last exception
 # after MaxAttempts failures so the caller can exit cleanly.
 function Invoke-DownloadWithRetry {
@@ -219,6 +240,8 @@ try {
         exit 1
     }
 
+    [void](Wait-RustDeskConfigReady)
+
     Write-Host "Applying server options..."
     $rustdeskExe = Join-Path $rustdeskInstallPath 'rustdesk.exe'
     Set-RustDeskOption -ExePath $rustdeskExe -Key 'custom-rendezvous-server' -Value $rustdeskIdServer
@@ -226,7 +249,11 @@ try {
     Set-RustDeskOption -ExePath $rustdeskExe -Key 'api-server' -Value $rustdeskApiServer
     Set-RustDeskOption -ExePath $rustdeskExe -Key 'key' -Value $rustdeskKey
 
-    & ".\rustdesk.exe" --password $rustdeskPermanentPassword
+    $null = & ".\rustdesk.exe" --password $rustdeskPermanentPassword 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        Start-Sleep -Seconds 3
+        & ".\rustdesk.exe" --password $rustdeskPermanentPassword
+    }
 
     $clientId = (& ".\rustdesk.exe" --get-id | Out-String).Trim()
     if ($clientId) {

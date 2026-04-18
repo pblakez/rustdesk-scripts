@@ -27,6 +27,25 @@ function Test-IsAdmin {
     return $principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
+# Waits for the RustDesk service's TOML config files to exist in the
+# LocalService profile. --password persists to these files; calling it
+# before the initial TOML exists fails with "os error 2" on fresh boxes.
+function Wait-RustDeskConfigReady {
+    param(
+        [string]$ConfigDir = "$env:WINDIR\ServiceProfiles\LocalService\AppData\Roaming\RustDesk\config",
+        [int]$MaxAttempts = 20,
+        [int]$DelaySeconds = 1
+    )
+    for ($i = 0; $i -lt $MaxAttempts; $i++) {
+        if (Get-ChildItem -Path $ConfigDir -Filter 'RustDesk*.toml' -ErrorAction SilentlyContinue) {
+            Start-Sleep -Seconds 2  # extra settle for the service's initial TOML write
+            return $true
+        }
+        Start-Sleep -Seconds $DelaySeconds
+    }
+    return $false
+}
+
 # Polls the Rustdesk service, retrying Start-Service if stopped. Returns $true
 # once it reaches Running, $false after MaxAttempts * DelaySeconds.
 function Wait-RustDeskServiceRunning {
@@ -70,8 +89,14 @@ try {
         exit 1
     }
 
+    [void](Wait-RustDeskConfigReady)
+
     Set-Location -Path $rustdeskInstallPath
-    & ".\rustdesk.exe" --password $rustdeskPermanentPassword
+    $null = & ".\rustdesk.exe" --password $rustdeskPermanentPassword 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        Start-Sleep -Seconds 3
+        & ".\rustdesk.exe" --password $rustdeskPermanentPassword
+    }
 
     Write-Host "Permanent password set successfully."
 }

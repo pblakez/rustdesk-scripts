@@ -49,6 +49,26 @@ function Set-RustDeskOption {
     }
 }
 
+# Waits for the RustDesk service's TOML config files to exist in the
+# LocalService profile. --option persists to these files; writes issued
+# before the initial TOML exists can be silently overwritten when the
+# service does its own first write.
+function Wait-RustDeskConfigReady {
+    param(
+        [string]$ConfigDir = "$env:WINDIR\ServiceProfiles\LocalService\AppData\Roaming\RustDesk\config",
+        [int]$MaxAttempts = 20,
+        [int]$DelaySeconds = 1
+    )
+    for ($i = 0; $i -lt $MaxAttempts; $i++) {
+        if (Get-ChildItem -Path $ConfigDir -Filter 'RustDesk*.toml' -ErrorAction SilentlyContinue) {
+            Start-Sleep -Seconds 2  # extra settle for the service's initial TOML write
+            return $true
+        }
+        Start-Sleep -Seconds $DelaySeconds
+    }
+    return $false
+}
+
 # Polls the Rustdesk service, retrying Start-Service if stopped. Returns $true
 # once it reaches Running, $false after MaxAttempts * DelaySeconds.
 function Wait-RustDeskServiceRunning {
@@ -97,6 +117,8 @@ try {
     if (-not (Wait-RustDeskServiceRunning)) {
         exit 1
     }
+
+    [void](Wait-RustDeskConfigReady)
 
     # Apply server/key config via the CLI. Keys match the names accepted by
     # RustDesk's --option handler (src/core_main.rs: "custom-rendezvous-server",
