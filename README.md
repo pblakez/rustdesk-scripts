@@ -13,6 +13,21 @@ PowerShell scripts for deploying and managing RustDesk remote desktop software i
 
 ## Scripts
 
+Action1 PowerShell scripts (Windows):
+
+- [act1-deploy-rustdesk.ps1](#act1-deploy-rustdeskps1) — download, install, configure with EXE installer
+- [act1-deploy-rustdesk-msi.ps1](#act1-deploy-rustdesk-msips1) — download, install, configure with MSI installer
+- [act1-update-rustdesk-config.ps1](#act1-update-rustdesk-configps1) — update server/key on an existing install
+- [act1-change-rustdesk-password.ps1](#act1-change-rustdesk-passwordps1) — set the permanent password
+- [act1-print-rustdesk-config.ps1](#act1-print-rustdesk-configps1) — print current config (version, ID, server, key)
+
+Debian/Ubuntu bash scripts (Linux):
+
+- [debian-install-rustdesk.sh](#debian-install-rustdesksh) — download, install, configure via `.deb`
+- [debian-update-rustdesk-config.sh](#debian-update-rustdesk-configsh) — update server/key on an existing install
+- [debian-change-rustdesk-password.sh](#debian-change-rustdesk-passwordsh) — set the permanent password
+- [debian-print-rustdesk-config.sh](#debian-print-rustdesk-configsh) — print current config
+
 ### act1-deploy-rustdesk.ps1
 
 **Purpose**: Downloads, installs, and configures RustDesk with custom server settings and a permanent password.
@@ -42,6 +57,14 @@ PowerShell scripts for deploying and managing RustDesk remote desktop software i
 - Configuration file is located at: `C:\Windows\ServiceProfiles\LocalService\AppData\Roaming\RustDesk\config\RustDesk.toml`
 - Installation directory: `C:\Program Files\RustDesk`
 
+### act1-deploy-rustdesk-msi.ps1
+
+**Purpose**: Same as `act1-deploy-rustdesk.ps1` but uses the MSI installer invoked via `msiexec /qn ADDLOCAL=ALL`. Useful in environments that prefer MSI for Group Policy / RMM tracking.
+
+**Parameters**: identical to `act1-deploy-rustdesk.ps1` (`id-server`, `relay-server`, `api-server`, `key`, `password`).
+
+**What it does**: same flow as the EXE variant — resolve version from GitHub, skip if already current, MSI install, wait for service, push server options and password via `rustdesk.exe --option` / `--password`.
+
 ### act1-update-rustdesk-config.ps1
 
 **Purpose**: Updates an existing RustDesk installation with new server configuration details.
@@ -70,14 +93,19 @@ PowerShell scripts for deploying and managing RustDesk remote desktop software i
 
 ### act1-change-rustdesk-password.ps1
 
-**Purpose**: Changes the permanent password for an existing RustDesk installation.
+**Purpose**: Sets the permanent password on an existing RustDesk installation.
 
-**Status**: Currently not implemented (empty file)
+**Parameters**: `password` (required).
 
-**Planned functionality**:
-- Update the permanent password for the RustDesk client
-- Require administrator privileges
-- Work with existing RustDesk installation
+**What it does**: verifies admin privileges, waits for the Rustdesk service to be running, calls `rustdesk.exe --password <value>` over IPC. Errors out if RustDesk isn't installed.
+
+### act1-print-rustdesk-config.ps1
+
+**Purpose**: Reads and prints the current RustDesk version, client ID, ID/relay/API server, and key from the running service.
+
+**Parameters**: none.
+
+**What it does**: waits for the service, then calls `rustdesk.exe --version`, `--get-id`, and `--option <key>` (read mode) over IPC. Empty options are shown as `(not set)`.
 
 ## Action1 RMM Integration
 
