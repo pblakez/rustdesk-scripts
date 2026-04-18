@@ -4,8 +4,6 @@
 # this script is designed to run in action1 enviroment
 # act1: change-rustdesk-password
 # parameters: password
-# tested 2025-09-06 OK
-
 
 $rustdeskPermanentPassword = ${password} # "YourN3wS3cureP@ssw0rd!"
 
