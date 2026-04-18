@@ -58,3 +58,7 @@ Deploy scripts resolve the target version at runtime via the GitHub releases API
 - PowerShell 7.0+ and Administrator privileges on Windows
 - root (via `sudo`) on Debian/Ubuntu
 - Network access to `api.github.com` and `github.com` for installer download
+
+## License
+
+Apache License, Version 2.0 (see `LICENSE-2.0.txt`).

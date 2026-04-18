@@ -284,4 +284,4 @@ In RustDesk → Settings → Display, enable **Allow remote connection if there 
 
 ## License
 
-These scripts are provided as-is for managing RustDesk deployments. RustDesk itself is subject to its own licensing terms.
+Licensed under the Apache License, Version 2.0 — see [LICENSE-2.0.txt](LICENSE-2.0.txt). RustDesk itself is distributed under its own license.
