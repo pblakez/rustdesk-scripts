@@ -110,7 +110,7 @@ To use these scripts outside of Action1:
 
 ## Linux (Ubuntu/Debian) Equivalents
 
-RustDesk's `--option` and `--password` CLI flags behave the same on Linux as on Windows, so the logic of the Action1 PowerShell scripts maps directly. Two of them have packaged bash equivalents: `debian-install-rustdesk.sh` and `debian-update-rustdesk-config.sh`. The rest are short enough to run as ad-hoc commands.
+RustDesk's `--option` and `--password` CLI flags behave the same on Linux as on Windows, so the logic of the Action1 PowerShell scripts maps directly. Three of them have packaged bash equivalents: `debian-install-rustdesk.sh`, `debian-update-rustdesk-config.sh`, and `debian-print-rustdesk-config.sh`. The rest are short enough to run as ad-hoc commands.
 
 ### debian-install-rustdesk.sh
 
@@ -181,9 +181,17 @@ Alternative bulk import (useful for first-run provisioning):
 sudo rustdesk --import-config /path/to/RustDesk2.toml
 ```
 
-### Equivalent of `act1-print-rustdesk-config.ps1`
+### debian-print-rustdesk-config.sh
 
-Read-only version of the same IPC calls — useful to confirm what the running service currently has applied.
+Debian/Ubuntu equivalent of `act1-print-rustdesk-config.ps1`. Prints the current RustDesk version, client ID, ID/relay/API server, and key.
+
+```bash
+sudo ./debian-print-rustdesk-config.sh
+```
+
+Empty options show as `(not set)`. Waits for the service to become active first, same IPC caveat as the other scripts.
+
+Raw-command equivalent:
 
 ```bash
 sudo systemctl start rustdesk
