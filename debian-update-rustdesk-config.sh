@@ -100,6 +100,16 @@ if ! systemctl is-active --quiet rustdesk; then
 fi
 sleep 2  # let the IPC socket settle after the service comes up
 
+# Wait for the service's TOML config to exist. --option writes that get
+# issued before the initial TOML is created can be silently overwritten
+# when the service does its first write.
+for _ in {1..20}; do
+    if compgen -G "/root/.config/rustdesk/RustDesk*.toml" >/dev/null 2>&1; then
+        break
+    fi
+    sleep 1
+done
+
 # Apply server/key config via the CLI. Keys match the names accepted by
 # RustDesk's --option handler (src/core_main.rs: "custom-rendezvous-server",
 # "relay-server", "api-server", "key"). IPC writes take effect live — no

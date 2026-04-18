@@ -169,22 +169,28 @@ if [[ ! -x "$rustdesk_bin" ]]; then
     exit 1
 fi
 
-echo "Applying server options..."
-"$rustdesk_bin" --option custom-rendezvous-server "$id_server"
-"$rustdesk_bin" --option relay-server            "$relay_server"
-"$rustdesk_bin" --option api-server              "$api_server"
-"$rustdesk_bin" --option key                     "$key"
-
-# --password reads /root/.config/rustdesk/RustDesk*.toml directly. On a fresh
-# install the service needs a moment to create these after startup; calling
-# --password too early yields "No such file or directory (os error 2)".
-echo "Setting permanent password..."
+# Wait for the service to create its config files. Both --option and
+# --password persist to /root/.config/rustdesk/RustDesk*.toml; on a fresh
+# install those are created a beat after the service starts. Calling
+# --option too early looks fine but gets overwritten when the service later
+# writes its initial TOML, and --password fails with "os error 2".
 for _ in {1..20}; do
     if compgen -G "/root/.config/rustdesk/RustDesk*.toml" >/dev/null 2>&1; then
         break
     fi
     sleep 1
 done
+# Extra settle time so the service's own initial TOML write finishes before
+# we layer our values on top.
+sleep 2
+
+echo "Applying server options..."
+"$rustdesk_bin" --option custom-rendezvous-server "$id_server"
+"$rustdesk_bin" --option relay-server            "$relay_server"
+"$rustdesk_bin" --option api-server              "$api_server"
+"$rustdesk_bin" --option key                     "$key"
+
+echo "Setting permanent password..."
 if ! "$rustdesk_bin" --password "$password" >/dev/null 2>&1; then
     sleep 3
     "$rustdesk_bin" --password "$password"
