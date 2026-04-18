@@ -175,8 +175,20 @@ echo "Applying server options..."
 "$rustdesk_bin" --option api-server              "$api_server"
 "$rustdesk_bin" --option key                     "$key"
 
+# --password reads /root/.config/rustdesk/RustDesk*.toml directly. On a fresh
+# install the service needs a moment to create these after startup; calling
+# --password too early yields "No such file or directory (os error 2)".
 echo "Setting permanent password..."
-"$rustdesk_bin" --password "$password"
+for _ in {1..20}; do
+    if compgen -G "/root/.config/rustdesk/RustDesk*.toml" >/dev/null 2>&1; then
+        break
+    fi
+    sleep 1
+done
+if ! "$rustdesk_bin" --password "$password" >/dev/null 2>&1; then
+    sleep 3
+    "$rustdesk_bin" --password "$password"
+fi
 
 client_id=$("$rustdesk_bin" --get-id 2>/dev/null | tr -d '[:space:]' || true)
 if [[ -n "$client_id" ]]; then

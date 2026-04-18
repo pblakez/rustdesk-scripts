@@ -81,6 +81,17 @@ if ! systemctl is-active --quiet rustdesk; then
 fi
 sleep 2  # let the IPC socket settle after the service comes up
 
-"$rustdesk_bin" --password "$password"
+# --password reads /root/.config/rustdesk/RustDesk*.toml directly. Wait for
+# those to exist and retry once on transient "os error 2" failures.
+for _ in {1..20}; do
+    if compgen -G "/root/.config/rustdesk/RustDesk*.toml" >/dev/null 2>&1; then
+        break
+    fi
+    sleep 1
+done
+if ! "$rustdesk_bin" --password "$password" >/dev/null 2>&1; then
+    sleep 3
+    "$rustdesk_bin" --password "$password"
+fi
 
 echo "Permanent password set successfully."
