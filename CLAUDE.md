@@ -21,6 +21,7 @@ Linux:
 - **debian-install-rustdesk.sh**: Debian/Ubuntu equivalent of `act1-deploy-rustdesk-msi.ps1`. Takes parameters from CLI flags (`--id-server`, `--key`, `--password`, etc.) instead of Action1 placeholders.
 - **debian-update-rustdesk-config.sh**: Debian/Ubuntu equivalent of `act1-update-rustdesk-config.ps1`. Updates server/key on an existing install; requires `--id-server` and `--key`, optional `--relay-server` / `--api-server`.
 - **debian-print-rustdesk-config.sh**: Debian/Ubuntu equivalent of `act1-print-rustdesk-config.ps1`. Prints version, client ID, server settings, and key.
+- **debian-change-rustdesk-password.sh**: Debian/Ubuntu equivalent of `act1-change-rustdesk-password.ps1`. Sets the permanent password via `rustdesk --password`.
 
 ## Action1 Parameters
 

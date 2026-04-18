@@ -110,7 +110,7 @@ To use these scripts outside of Action1:
 
 ## Linux (Ubuntu/Debian) Equivalents
 
-RustDesk's `--option` and `--password` CLI flags behave the same on Linux as on Windows, so the logic of the Action1 PowerShell scripts maps directly. Three of them have packaged bash equivalents: `debian-install-rustdesk.sh`, `debian-update-rustdesk-config.sh`, and `debian-print-rustdesk-config.sh`. The rest are short enough to run as ad-hoc commands.
+RustDesk's `--option` and `--password` CLI flags behave the same on Linux as on Windows, so the logic of the Action1 PowerShell scripts maps directly. Packaged bash equivalents: `debian-install-rustdesk.sh`, `debian-update-rustdesk-config.sh`, `debian-print-rustdesk-config.sh`, and `debian-change-rustdesk-password.sh`.
 
 ### debian-install-rustdesk.sh
 
@@ -211,7 +211,17 @@ for k in custom-rendezvous-server relay-server api-server key; do
 done
 ```
 
-### Equivalent of `act1-change-rustdesk-password.ps1`
+### debian-change-rustdesk-password.sh
+
+Debian/Ubuntu equivalent of `act1-change-rustdesk-password.ps1`. Sets the permanent password on an existing install.
+
+```bash
+sudo ./debian-change-rustdesk-password.sh --password '<NewPermanentPassword>'
+```
+
+Errors out with "Nothing to update" if RustDesk isn't installed. Waits for the service to become active before writing.
+
+Raw-command equivalent:
 
 ```bash
 sudo systemctl start rustdesk
