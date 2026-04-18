@@ -140,6 +140,38 @@ To use these scripts outside of Action1:
 
 RustDesk's `--option` and `--password` CLI flags behave the same on Linux as on Windows, so the logic of the Action1 PowerShell scripts maps directly. Packaged bash equivalents: `debian-install-rustdesk.sh`, `debian-update-rustdesk-config.sh`, `debian-print-rustdesk-config.sh`, and `debian-change-rustdesk-password.sh`.
 
+### Download
+
+Grab the raw scripts from GitHub (review before running).
+
+**curl** — one at a time:
+
+```bash
+curl -fsSLO https://raw.githubusercontent.com/pblakez/rustdesk-scripts/main/debian-install-rustdesk.sh
+curl -fsSLO https://raw.githubusercontent.com/pblakez/rustdesk-scripts/main/debian-update-rustdesk-config.sh
+curl -fsSLO https://raw.githubusercontent.com/pblakez/rustdesk-scripts/main/debian-change-rustdesk-password.sh
+curl -fsSLO https://raw.githubusercontent.com/pblakez/rustdesk-scripts/main/debian-print-rustdesk-config.sh
+chmod +x debian-*.sh
+```
+
+**wget**:
+
+```bash
+wget https://raw.githubusercontent.com/pblakez/rustdesk-scripts/main/debian-install-rustdesk.sh
+wget https://raw.githubusercontent.com/pblakez/rustdesk-scripts/main/debian-update-rustdesk-config.sh
+wget https://raw.githubusercontent.com/pblakez/rustdesk-scripts/main/debian-change-rustdesk-password.sh
+wget https://raw.githubusercontent.com/pblakez/rustdesk-scripts/main/debian-print-rustdesk-config.sh
+chmod +x debian-*.sh
+```
+
+**Grab-all one-liner** (curl):
+
+```bash
+for s in debian-install-rustdesk.sh debian-update-rustdesk-config.sh debian-change-rustdesk-password.sh debian-print-rustdesk-config.sh; do
+  curl -fsSLO "https://raw.githubusercontent.com/pblakez/rustdesk-scripts/main/$s"
+done && chmod +x debian-*.sh
+```
+
 ### debian-install-rustdesk.sh
 
 Debian/Ubuntu equivalent of `act1-deploy-rustdesk-msi.ps1`. Takes its parameters from the CLI instead of Action1 placeholders.
