@@ -1,30 +1,23 @@
 # Requires PowerShell 7.0+
 # This script must be run with Administrator privileges.
-# src: update-rustdesk-config.ps1
+# src: act1-update-rustdesk-config.ps1
 # this script is designed to run in action1 enviroment
-# act1: attain-update-rustdesk-config
+# act1: update-rustdesk-config
 # parameters: id-server, relay-server, api-server, key
 
 
-#region User Configuration
-# ==============================================================================
-# EDIT THESE VARIABLES WITH YOUR NEW SERVER DETAILS
-# ==============================================================================
 $rustdeskIdServer = ${id-server}
 $rustdeskRelayServer = ${relay-server} # This parameter is optional. Set it to a blank string ("") to not use an API server.
 $rustdeskApiServer = ${api-server} # This parameter is optional. Set it to a blank string ("") to not use an API server.
 $rustdeskKey = ${key} #"your_new_public_key"
-#endregion User Configuration
 
-#region Helper Functions
-# ==============================================================================
-# Helper function to check for administrator privileges
-# ==============================================================================
+# Returns $true when the current session is running with Administrator rights.
 function Test-IsAdmin {
     $principal = New-Object System.Security.Principal.WindowsPrincipal([System.Security.Principal.WindowsIdentity]::GetCurrent())
     return $principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
+# Writes a RustDesk --option setting via IPC to the running service.
 function Set-RustDeskOption {
     param(
         [Parameter(Mandatory)][string]$ExePath,
@@ -42,6 +35,8 @@ function Set-RustDeskOption {
     }
 }
 
+# Polls the Rustdesk service, retrying Start-Service if stopped. Returns $true
+# once it reaches Running, $false after MaxAttempts * DelaySeconds.
 function Wait-RustDeskServiceRunning {
     param(
         [string]$ServiceName = 'Rustdesk',
@@ -62,12 +57,6 @@ function Wait-RustDeskServiceRunning {
     Write-Host ("RustDesk service did not start within {0} seconds." -f ($MaxAttempts * $DelaySeconds))
     return $false
 }
-#endregion Helper Functions
-
-#region Main Script
-# ==============================================================================
-# Script logic to update RustDesk configuration
-# ==============================================================================
 
 if (-not (Test-IsAdmin)) {
     Write-Host "ERROR: Administrator privileges required."
@@ -112,5 +101,3 @@ catch {
     Write-Host "ERROR: $($_.Exception.Message)"
     exit 1
 }
-
-#endregion Main Script

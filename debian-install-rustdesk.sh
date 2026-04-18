@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # src: debian-install-rustdesk.sh
-# Debian/Ubuntu equivalent of deploy-rustdesk-msi.ps1.
+# Debian/Ubuntu equivalent of act1-deploy-rustdesk-msi.ps1.
 # Downloads, installs, and configures RustDesk with custom server details.
 #
 # Must be run as root (sudo).
@@ -79,7 +79,6 @@ case "$(uname -m)" in
     *)       echo "ERROR: unsupported architecture: $(uname -m)" >&2; exit 1 ;;
 esac
 
-# A1: Resolve target version — GitHub API or pinned override
 if [[ -n "$version_override" ]]; then
     target_version="${version_override#v}"
     echo "Using pinned version: $target_version"
@@ -100,7 +99,6 @@ fi
 installer_url="https://github.com/rustdesk/rustdesk/releases/download/${target_version}/rustdesk-${target_version}-${arch}.deb"
 installer_path="/tmp/rustdesk-${target_version}-${arch}.deb"
 
-# A2: Skip install if already at or above the target version
 installed_version=""
 if dpkg-query -W -f='${Version}' rustdesk >/dev/null 2>&1; then
     installed_version=$(dpkg-query -W -f='${Version}' rustdesk)

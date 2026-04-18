@@ -11,14 +11,14 @@ PowerShell scripts for deploying and managing RustDesk remote desktop software i
 
 ## Scripts
 
-### deploy-rustdesk.ps1
+### act1-deploy-rustdesk.ps1
 
 **Purpose**: Downloads, installs, and configures RustDesk with custom server settings and a permanent password.
 
 **Usage**:
 ```powershell
 # Run with Administrator privileges
-.\deploy-rustdesk.ps1
+.\act1-deploy-rustdesk.ps1
 ```
 
 **Parameters** (configured in script or via Action1):
@@ -40,14 +40,14 @@ PowerShell scripts for deploying and managing RustDesk remote desktop software i
 - Configuration file is located at: `C:\Windows\ServiceProfiles\LocalService\AppData\Roaming\RustDesk\config\RustDesk.toml`
 - Installation directory: `C:\Program Files\RustDesk`
 
-### update-rustdesk-config.ps1
+### act1-update-rustdesk-config.ps1
 
 **Purpose**: Updates an existing RustDesk installation with new server configuration details.
 
 **Usage**:
 ```powershell
 # Run with Administrator privileges
-.\update-rustdesk-config.ps1
+.\act1-update-rustdesk-config.ps1
 ```
 
 **Parameters** (configured in script or via Action1):
@@ -66,7 +66,7 @@ PowerShell scripts for deploying and managing RustDesk remote desktop software i
 - May require RustDesk service restart for changes to take effect
 - Will fail if RustDesk is not already installed
 
-### change-rustdesk-password.ps1
+### act1-change-rustdesk-password.ps1
 
 **Purpose**: Changes the permanent password for an existing RustDesk installation.
 
@@ -108,11 +108,11 @@ To use these scripts outside of Action1:
 
 ## Linux (Ubuntu/Debian) Equivalents
 
-RustDesk's `--option` and `--password` CLI flags behave the same on Linux as on Windows, so the logic of `update-rustdesk-config.ps1` and `change-rustdesk-password.ps1` maps directly.
+RustDesk's `--option` and `--password` CLI flags behave the same on Linux as on Windows, so the logic of `act1-update-rustdesk-config.ps1` and `act1-change-rustdesk-password.ps1` maps directly.
 
 ### debian-install-rustdesk.sh
 
-Debian/Ubuntu equivalent of `deploy-rustdesk-msi.ps1`. Takes its parameters from the CLI instead of Action1 placeholders.
+Debian/Ubuntu equivalent of `act1-deploy-rustdesk-msi.ps1`. Takes its parameters from the CLI instead of Action1 placeholders.
 
 ```bash
 sudo ./debian-install-rustdesk.sh \
@@ -147,7 +147,7 @@ Always re-applies the config even when the install is skipped, so the same scrip
 - **User config dir** (per-user GUI session): `~/.config/rustdesk/`
 - **Logs**: `~/.local/share/logs/RustDesk/`
 
-### Equivalent of `update-rustdesk-config.ps1`
+### Equivalent of `act1-update-rustdesk-config.ps1`
 
 `--option` goes over IPC to the running service, so the service must be up and the commands must run as root (same caveat as Windows).
 
@@ -167,7 +167,7 @@ Alternative bulk import (useful for first-run provisioning):
 sudo rustdesk --import-config /path/to/RustDesk2.toml
 ```
 
-### Equivalent of `print-rustdesk-config.ps1`
+### Equivalent of `act1-print-rustdesk-config.ps1`
 
 Read-only version of the same IPC calls — useful to confirm what the running service currently has applied.
 
@@ -189,7 +189,7 @@ for k in custom-rendezvous-server relay-server api-server key; do
 done
 ```
 
-### Equivalent of `change-rustdesk-password.ps1`
+### Equivalent of `act1-change-rustdesk-password.ps1`
 
 ```bash
 sudo systemctl start rustdesk

@@ -8,9 +8,9 @@ This repository contains PowerShell scripts for deploying and managing RustDesk 
 
 ## Key Scripts
 
-- **deploy-rustdesk.ps1**: Downloads, installs, and configures RustDesk with custom server settings and permanent password
-- **update-rustdesk-config.ps1**: Updates existing RustDesk configuration with new server details
-- **change-rustdesk-password.ps1**: Currently empty, intended for password management functionality
+- **act1-deploy-rustdesk.ps1**: Downloads, installs, and configures RustDesk with custom server settings and permanent password
+- **act1-update-rustdesk-config.ps1**: Updates existing RustDesk configuration with new server details
+- **act1-change-rustdesk-password.ps1**: Currently empty, intended for password management functionality
 
 ## Action1 Integration
 

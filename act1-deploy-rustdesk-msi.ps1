@@ -1,15 +1,11 @@
 # Requires PowerShell 7.0+
 # This script must be run with Administrator privileges.
-# src: deploy-rustdesk-msi.ps1
+# src: act1-deploy-rustdesk-msi.ps1
 # this script is designed to run in action1 enviroment
-# act1: attain-deploy-rustdesk-msi
+# act1: deploy-rustdesk-msi
 # parameters: id-server, relay-server, api-server, key, password
 # note relay-server and api-server are optional parameters. Set them to a blank string ("") to not use Relay and API server.
 
-#region User Configuration
-# ==============================================================================
-# EDIT THESE VARIABLES WITH YOUR SERVER DETAILS AND PASSWORD
-# ==============================================================================
 $rustdeskIdServer = ${id-server} #"your_id_server.example.com"
 $rustdeskRelayServer = ${relay-server} # "your_relay_server.example.com" can be blank
 $rustdeskApiServer = ${api-server} # Required for RustDesk Pro can be blank otherwise
@@ -19,15 +15,16 @@ $rustdeskPermanentPassword = ${password} #"YourS3cureP@ssw0rd!"
 # Leave empty to auto-detect the latest version from GitHub.
 # Set to a specific version (e.g., "1.4.1") to pin.
 $rustdeskVersionOverride = ""
-#endregion User Configuration
 
-#region Helper Functions
-
+# Returns $true when the current session is running with Administrator rights.
 function Test-IsAdmin {
     $principal = New-Object System.Security.Principal.WindowsPrincipal([System.Security.Principal.WindowsIdentity]::GetCurrent())
     return $principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
+# Writes a RustDesk --option setting via IPC. Uses Start-Process for empty
+# values to work around a PS<7.3 quirk that strips empty string args from
+# '& exe $var' calls, turning the 3-arg write into a 2-arg read.
 function Set-RustDeskOption {
     param(
         [Parameter(Mandatory)][string]$ExePath,
@@ -41,6 +38,9 @@ function Set-RustDeskOption {
     }
 }
 
+# Polls the Rustdesk service, retrying Start-Service if stopped. With
+# -InstallIfMissing, registers the service via 'rustdesk.exe --install-service'
+# first. Returns $true once it reaches Running, $false on timeout or failure.
 function Wait-RustDeskServiceRunning {
     param(
         [string]$InstallPath = "$env:ProgramFiles\RustDesk",
@@ -80,6 +80,9 @@ function Wait-RustDeskServiceRunning {
     return $false
 }
 
+# Queries the GitHub releases API for the latest RustDesk release and returns
+# @{ Version; DownloadUrl } for the x86_64 asset matching $InstallerType, or
+# $null on failure.
 function Get-LatestRustDeskRelease {
     param(
         [ValidateSet('exe', 'msi')]
@@ -104,6 +107,8 @@ function Get-LatestRustDeskRelease {
     }
 }
 
+# Wraps Invoke-WebRequest with retry/backoff. Rethrows the last exception
+# after MaxAttempts failures so the caller can exit cleanly.
 function Invoke-DownloadWithRetry {
     param(
         [Parameter(Mandatory)][string]$Uri,
@@ -125,13 +130,6 @@ function Invoke-DownloadWithRetry {
     }
 }
 
-#endregion Helper Functions
-
-#region Main Script
-# ==============================================================================
-# Script logic to download, install, and configure RustDesk (MSI installer)
-# ==============================================================================
-
 if (-not (Test-IsAdmin)) {
     Write-Host "ERROR: Administrator privileges required."
     exit 1
@@ -140,9 +138,6 @@ if (-not (Test-IsAdmin)) {
 $rustdeskInstallPath = "$env:ProgramFiles\RustDesk"
 $installerPath = "$env:TEMP\rustdesk-installer.msi"
 
-# ---------------------------------------------------------------------------
-# A1: Resolve target version — GitHub API or pinned override
-# ---------------------------------------------------------------------------
 if ($rustdeskVersionOverride) {
     $targetVersion = $rustdeskVersionOverride
     $installerUrl = "https://github.com/rustdesk/rustdesk/releases/download/$targetVersion/rustdesk-$targetVersion-x86_64.msi"
@@ -159,9 +154,6 @@ if ($rustdeskVersionOverride) {
     Write-Host "Latest version: $targetVersion"
 }
 
-# ---------------------------------------------------------------------------
-# A2: Skip install if already at or above the target version
-# ---------------------------------------------------------------------------
 $installedVersion = $null
 try {
     $installedVersion = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\RustDesk\" -ErrorAction SilentlyContinue).Version
@@ -183,9 +175,6 @@ if ($installedVersion) {
     Write-Host "RustDesk not currently installed."
 }
 
-# ---------------------------------------------------------------------------
-# Download and install (skipped if already current)
-# ---------------------------------------------------------------------------
 if (-not $skipInstall) {
     try {
         Write-Host "Downloading RustDesk MSI installer from $installerUrl..."
@@ -207,9 +196,8 @@ if (-not $skipInstall) {
     Remove-Item -Path $installerPath -Force -ErrorAction SilentlyContinue
 }
 
-# ---------------------------------------------------------------------------
-# Configure (always runs — Action1 may be pushing new server details)
-# ---------------------------------------------------------------------------
+# Configure always runs, even when install is skipped — Action1 may be pushing
+# new server details to an up-to-date client.
 try {
     Set-Location -Path $rustdeskInstallPath
 
@@ -236,5 +224,3 @@ try {
     Write-Host "ERROR: $($_.Exception.Message)"
     exit 1
 }
-
-#endregion Main Script
