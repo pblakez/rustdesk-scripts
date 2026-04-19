@@ -1,6 +1,6 @@
 # rustdesk-scripts
 
-PowerShell scripts for deploying and managing RustDesk remote desktop software in enterprise environments. These scripts are designed for use with Action1 RMM platform but can be adapted for standalone use.
+PowerShell and Debian scripts for deploying and managing RustDesk remote desktop software in enterprise environments. These scripts are designed for use with Action1 RMM platform but can be adapted for standalone use.
 
 > **Use at your own risk.** These scripts are provided "as is", without warranty of any kind. They install software, modify system configuration, and set credentials — review them before running and test on a non-production machine first. See [LICENSE-2.0.txt](LICENSE-2.0.txt) for full terms.
 
